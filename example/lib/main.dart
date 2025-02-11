@@ -1,31 +1,10 @@
+import 'package:example/widgy_registry.dart';
 import 'package:flutter/material.dart';
 import 'package:widgy/widgy.dart';
 
 void main() {
   Widgy.init();
-  Widgy.registerWidget(
-    name: "Custom Button",
-    builder: (p0) {
-      return ElevatedButton(
-        onPressed: () {},
-        child: Text(
-          p0.get("Text", defaultValue: "Hello"),
-        ),
-      );
-    },
-    properties: [
-      WidgetProperty(
-        name: "Color",
-        type: WidgetPropertyType.color,
-        value: Colors.blue,
-      ),
-      WidgetProperty(
-        name: "Text",
-        type: WidgetPropertyType.string,
-        value: "Click Me",
-      ),
-    ],
-  );
+  registerWidgets();
 
   runApp(const MyApp());
 }

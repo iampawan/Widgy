@@ -1,11 +1,16 @@
 import 'dart:io';
 
+import 'package:analyzer/dart/analysis/utilities.dart' show parseString;
+import 'package:analyzer/dart/ast/ast.dart'
+    show ClassDeclaration, MethodDeclaration, InstanceCreationExpression;
+import 'package:analyzer/dart/ast/visitor.dart' show RecursiveAstVisitor;
 import 'package:args/args.dart';
 import 'package:dart_console/dart_console.dart';
 import 'package:widgy/src/widget_metadata/widget_metadata_import.dart';
 
 const String _widgetRegistryFile = "lib/widgy_registry.dart";
 void main(List<String> arguments) async {
+  stdout.write("🚀 Welcome to Widgy CLI Tool\n");
   final parser = ArgParser()
     ..addFlag('discover',
         abbr: 'd',
@@ -18,9 +23,46 @@ void main(List<String> arguments) async {
     ..addFlag('generate-preview',
         abbr: 'g',
         help: 'Automatically generate previews for discovered widgets',
-        negatable: false);
+        negatable: false)
+    ..addFlag('graph',
+        abbr: 'G', help: 'Generate widget dependency graph', negatable: false)
+    ..addFlag('help',
+        abbr: 'h', help: 'Display this help message', negatable: false)
+    ..addFlag('version',
+        abbr: 'v', help: 'Display the version', negatable: false);
 
-  final argResults = parser.parse(arguments);
+  ArgResults argResults;
+  try {
+    argResults = parser.parse(arguments);
+  } catch (e) {
+    stdout.writeln('Error parsing arguments: $e');
+    stdout.writeln(parser.usage);
+    exit(64);
+  }
+  // Help command.
+  if (argResults['help'] as bool) {
+    stdout.writeln('Widgy CLI Tool');
+    stdout.writeln('Usage: dart run widgy [options]');
+    stdout.writeln(parser.usage);
+    exit(0);
+  }
+
+  // Version command.
+  if (argResults['version'] as bool) {
+    stdout.writeln('Widgy version 0.0.2');
+    exit(0);
+  }
+
+  // Dependency graph generation.
+  if (argResults['graph'] as bool) {
+    stdout.writeln('Inside graph generation');
+    // Optionally, you could add an extra flag to include Flutter widgets.
+    final includeFlutter = arguments.contains('--include-flutter');
+    stdout.writeln('Generating widget dependency graph...');
+    await generateDependencyGraph(includeFlutter: includeFlutter);
+    stdout.writeln('Dependency graph generated.');
+    exit(0);
+  }
 
   if (argResults.wasParsed('discover')) {
     final excludeDirs = (argResults['exclude'] as String?)?.split(',') ?? [];
@@ -239,6 +281,189 @@ Future<void> generatePreviews({required List<String> widgets}) async {
     file.writeAsStringSync("Preview generated for: $widget");
   }
   stdout.writeln("✅ Previews generated in widgy_previews/");
+}
+
+/// Generates a dependency graph for widget classes found in `lib/`
+/// using robust AST parsing. Writes both a DOT file and an HTML file for visualization.
+Future<void> generateDependencyGraph({bool includeFlutter = false}) async {
+  final libDir = Directory('lib');
+  if (!libDir.existsSync()) {
+    print('Error: lib directory not found.');
+    return;
+  }
+
+  stdout.writeln('Generating widget dependency graph...');
+
+  // Map of widget class name -> set of widget names instantiated in its build method.
+  final Map<String, Set<String>> dependencyGraph = {};
+
+  // List all Dart files under lib/
+  final dartFiles = libDir
+      .listSync(recursive: true)
+      .whereType<File>()
+      .where((file) => file.path.endsWith('.dart'));
+  stdout.writeln('Processing ${dartFiles.length} Dart files...');
+  // Process each Dart file.
+  for (final file in dartFiles) {
+    try {
+      final content = await file.readAsString();
+      final parseResult =
+          parseString(content: content, throwIfDiagnostics: false);
+      final unit = parseResult.unit;
+
+      // Iterate through declarations in the compilation unit.
+      for (final declaration in unit.declarations) {
+        if (declaration is ClassDeclaration) {
+          final className = declaration.name.lexeme;
+          bool isWidget = false;
+
+          // Check if the class extends StatelessWidget or StatefulWidget.
+          if (declaration.extendsClause != null) {
+            final superFull = declaration.extendsClause!.superclass.toSource();
+            // Extract the simple name by splitting on dot.
+            final superclassName = superFull.split('.').last;
+            if (superclassName == 'StatelessWidget' ||
+                superclassName == 'StatefulWidget') {
+              isWidget = true;
+            }
+          }
+          if (!isWidget) continue;
+
+          dependencyGraph.putIfAbsent(className, () => <String>{});
+
+          // Look for the build method in the class members.
+          for (final member in declaration.members) {
+            if (member is MethodDeclaration && member.name.lexeme == 'build') {
+              // Use our visitor to collect instantiated widget names.
+              final visitor = _WidgetInstantiationVisitor();
+              member.visitChildren(visitor);
+
+              // Process found widget instantiations.
+              for (final instantiatedWidget in visitor.instantiatedWidgets) {
+                // Optionally filter out common Flutter widgets.
+                if (!includeFlutter) {
+                  const flutterWidgets = {
+                    'Scaffold',
+                    'AppBar',
+                    'Text',
+                    'Column',
+                    'Row',
+                    'Container',
+                    'Padding',
+                    'ListView',
+                  };
+                  if (flutterWidgets.contains(instantiatedWidget)) continue;
+                }
+                // Avoid self-references.
+                if (instantiatedWidget == className) continue;
+                dependencyGraph[className]!.add(instantiatedWidget);
+              }
+            }
+          }
+        }
+      }
+    } catch (e, stackTrace) {
+      // Log the error and skip this file.
+      print('Error processing file ${file.path}: $e');
+      continue;
+    }
+  }
+  // Define a set of node names to ignore (these represent tokens, layout keywords, etc.)
+  const ignoreNodes = {
+    // 'all',
+    // 'only',
+    // 'shrink',
+    // 'symmetric',
+    'lg',
+    'md',
+    'xl4',
+    'xl3',
+    'xl2',
+    'xl5',
+    // 'Size',
+    // 'ValueKey',
+    // 'Key'
+  };
+
+  final dotBuffer = StringBuffer();
+
+// Add some graph attributes for a cleaner look.
+  dotBuffer.writeln('digraph WidgetGraph {');
+  dotBuffer.writeln(
+      '  graph [fontsize=10, rankdir=LR, splines=true, nodesep=0.8, ranksep=0.6];');
+// Style nodes with a box shape, light fill color, and a common font.
+  dotBuffer.writeln(
+      '  node [shape=box, style=filled, color="#CCCCFF", fontname="Helvetica"];');
+// Style edges with a dark gray color.
+  dotBuffer.writeln('  edge [color="#333333", arrowhead=normal];');
+
+// Build the graph edges, filtering out nodes that are in the ignore list.
+  dependencyGraph.forEach((widget, children) {
+    // If the parent widget is in the ignore list, skip it entirely.
+    if (ignoreNodes.contains(widget)) return;
+
+    for (final child in children) {
+      // Skip child nodes that are in the ignore list.
+      if (ignoreNodes.contains(child)) continue;
+      dotBuffer.writeln('  "$widget" -> "$child";');
+    }
+  });
+
+  dotBuffer.writeln('}');
+
+  final dotFile = File('widget_dependency_graph.dot');
+  await dotFile.writeAsString(dotBuffer.toString());
+  print('DOT file generated: ${dotFile.path}');
+
+  // Generate an HTML file using Viz.js for interactive visualization.
+  final htmlContent = '''
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Widget Dependency Graph</title>
+    <script src="https://unpkg.com/viz.js@2.1.2/viz.js"></script>
+    <script src="https://unpkg.com/viz.js@2.1.2/full.render.js"></script>
+    <style>
+      body { font-family: sans-serif; text-align: center; }
+      #graph { margin: 20px auto; }
+    </style>
+  </head>
+  <body>
+    <h1>Widget Dependency Graph</h1>
+    <div id="graph"></div>
+    <script>
+      var dot = \`${dotBuffer.toString()}\`;
+      var viz = new Viz();
+      viz.renderSVGElement(dot)
+         .then(function(element) {
+           document.getElementById('graph').appendChild(element);
+         })
+         .catch(error => {
+           console.error(error);
+         });
+    </script>
+  </body>
+</html>
+''';
+
+  final htmlFile = File('widget_dependency_graph.html');
+  await htmlFile.writeAsString(htmlContent);
+  print('HTML visualization generated: ${htmlFile.path}');
+}
+
+/// A recursive AST visitor that collects the names of instantiated widgets.
+class _WidgetInstantiationVisitor extends RecursiveAstVisitor<void> {
+  final Set<String> instantiatedWidgets = {};
+
+  @override
+  void visitInstanceCreationExpression(InstanceCreationExpression node) {
+    // Use toSource() on the type node and extract the simple name.
+    final fullTypeName = node.constructorName.type.toSource();
+    final simpleTypeName = fullTypeName.split('.').last;
+    instantiatedWidgets.add(simpleTypeName);
+    super.visitInstanceCreationExpression(node);
+  }
 }
 
 final console = Console();

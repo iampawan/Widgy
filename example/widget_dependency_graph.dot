@@ -1,0 +1,7 @@
+digraph WidgetGraph {
+  graph [fontsize=10, rankdir=LR, splines=true, nodesep=0.8, ranksep=0.6];
+  node [shape=box, style=filled, color="#CCCCFF", fontname="Helvetica"];
+  edge [color="#333333", arrowhead=normal];
+  "MyApp" -> "MyHomePage";
+  "Dummy" -> "Placeholder";
+}

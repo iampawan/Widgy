@@ -1,5 +1,5 @@
 name: widgy
-description: "Widgy is a **powerful Flutter package** that allows developers to **build, test, and preview widgets in isolation**. It enhances **UI development, debugging, and collaboration** by enabling interactive widget registration and previewing."
+description: "Widgy is a powerful package that allows developers to build, test, and preview widgets in isolation."
 version: 0.0.2
 homepage: "https://github.com/iampawan/Widgy"
 
@@ -14,8 +14,8 @@ dependencies:
   dataflow: ^1.4.0
   path_provider: ^2.1.5
   args: ^2.6.0
-  interact_pk: ^2.2.1
   dart_console: ^4.1.1
+  analyzer: ^7.3.0
 
 
 dev_dependencies:

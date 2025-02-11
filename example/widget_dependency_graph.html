@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Widget Dependency Graph</title>
+    <script src="https://unpkg.com/viz.js@2.1.2/viz.js"></script>
+    <script src="https://unpkg.com/viz.js@2.1.2/full.render.js"></script>
+    <style>
+      body { font-family: sans-serif; text-align: center; }
+      #graph { margin: 20px auto; }
+    </style>
+  </head>
+  <body>
+    <h1>Widget Dependency Graph</h1>
+    <div id="graph"></div>
+    <script>
+      var dot = `digraph WidgetGraph {
+  graph [fontsize=10, rankdir=LR, splines=true, nodesep=0.8, ranksep=0.6];
+  node [shape=box, style=filled, color="#CCCCFF", fontname="Helvetica"];
+  edge [color="#333333", arrowhead=normal];
+  "MyApp" -> "MyHomePage";
+  "Dummy" -> "Placeholder";
+}
+`;
+      var viz = new Viz();
+      viz.renderSVGElement(dot)
+         .then(function(element) {
+           document.getElementById('graph').appendChild(element);
+         })
+         .catch(error => {
+           console.error(error);
+         });
+    </script>
+  </body>
+</html>
