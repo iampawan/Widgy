@@ -1,7 +1,7 @@
 import 'dart:io';
 
 import 'package:args/args.dart';
-import 'package:interact/interact.dart';
+import 'package:interact_pk/interact_pk.dart';
 import 'package:widgy/src/widget_metadata/widget_metadata_import.dart';
 
 const String _widgetRegistryFile = "lib/widgy_registry.dart";
