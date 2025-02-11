@@ -26,6 +26,7 @@ class Widgy {
     );
   }
 
+  /// Register multiple widgets with the Widgy library.
   static void registerMultipleWidgets(List<WidgetMetaData> widgets) {
     for (var widget in widgets) {
       RegisterWidgetAction(metadata: widget);
