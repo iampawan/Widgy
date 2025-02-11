@@ -1,3 +1,4 @@
+import 'dart:developer' as developer;
 import 'dart:io';
 
 import 'package:args/args.dart';
@@ -27,26 +28,26 @@ void main(List<String> arguments) async {
     final logFilePath = argResults['log'] as String?;
     final generatePreview = argResults.wasParsed('generate-preview');
 
-    print("🔍 Discovering widgets in project...");
+    developer.log("🔍 Discovering widgets in project...");
     final discoveredWidgets = await discoverWidgets(excludeDirs: excludeDirs);
-    print("✅ Widget discovery complete.");
+    developer.log("✅ Widget discovery complete.");
 
     _loadRegistry();
 
     if (logFilePath != null) {
       final logFile = File(logFilePath);
       logFile.writeAsStringSync(discoveredWidgets.join('\n'));
-      print("📄 Widget discovery log saved to $logFilePath");
+      developer.log("📄 Widget discovery log saved to $logFilePath");
     }
 
     if (generatePreview) {
-      print("🖼 Generating previews for discovered widgets...");
+      developer.log("🖼 Generating previews for discovered widgets...");
       await generatePreviews(
           widgets: discoveredWidgets.map((w) => w.name).toList());
-      print("✅ Widget preview generation complete.");
+      developer.log("✅ Widget preview generation complete.");
     }
   } else {
-    print(
+    developer.log(
         "Usage: widgy [--discover] [--exclude=dir1,dir2] [--log=logfile.txt] [--generate-preview]");
   }
 }
@@ -56,7 +57,8 @@ Future<List<WidgetMetaDataBase>> discoverWidgets(
   final List<WidgetMetaData> discoveredWidgets = [];
 
   if (!Platform.isLinux && !Platform.isMacOS && !Platform.isWindows) {
-    print("⚠️ Widget discovery is only supported on desktop environments.");
+    developer
+        .log("⚠️ Widget discovery is only supported on desktop environments.");
     return [];
   }
 
@@ -64,7 +66,8 @@ Future<List<WidgetMetaDataBase>> discoverWidgets(
   final libDirectory = Directory("$projectRoot/lib");
 
   if (!libDirectory.existsSync()) {
-    print("❌ Error: The `lib/` directory does not exist in this project.");
+    developer
+        .log("❌ Error: The `lib/` directory does not exist in this project.");
     return [];
   }
 
@@ -77,8 +80,10 @@ Future<List<WidgetMetaDataBase>> discoverWidgets(
     final filePath = file.absolute.path;
 
     if (!filePath.startsWith(libDirectory.absolute.path)) continue;
-    if (filePath.contains(Platform.environment['FLUTTER_ROOT'] ?? "/flutter/"))
+    if (filePath
+        .contains(Platform.environment['FLUTTER_ROOT'] ?? "/flutter/")) {
       continue;
+    }
 
     try {
       final content = file.readAsStringSync();
@@ -94,12 +99,12 @@ Future<List<WidgetMetaDataBase>> discoverWidgets(
         }
       }
     } catch (e) {
-      print("⚠️ Error reading file: $filePath, skipping. Error: $e");
+      developer.log("⚠️ Error reading file: $filePath, skipping. Error: $e");
     }
   }
 
   if (discoveredWidgets.isEmpty) {
-    print("✅ No new widgets detected.");
+    developer.log("✅ No new widgets detected.");
     return [];
   }
 
@@ -119,7 +124,7 @@ Future<List<WidgetMetaDataBase>> discoverWidgets(
   List<WidgetMetaDataBase> selectedWidgets = [];
 
   if (selected.isEmpty) {
-    print("⚠️ No widgets selected. Operation cancelled.");
+    developer.log("⚠️ No widgets selected. Operation cancelled.");
     return [];
   }
 
@@ -130,15 +135,15 @@ Future<List<WidgetMetaDataBase>> discoverWidgets(
     selectedWidgets = selected.map((i) => discoveredWidgets[i - 1]).toList();
   }
 
-  print("\n📝 Summary of Widget Selection:");
+  developer.log("\n📝 Summary of Widget Selection:");
   for (var widget in selectedWidgets) {
-    print("✔ Registered: ${widget.name}");
+    developer.log("✔ Registered: ${widget.name}");
   }
   _saveRegistry(selectedWidgets);
   final skippedWidgets =
       discoveredWidgets.where((w) => !selectedWidgets.contains(w)).toList();
   for (var widget in skippedWidgets) {
-    print("❌ Skipped: ${widget.name}");
+    developer.log("❌ Skipped: ${widget.name}");
   }
 
   return selectedWidgets;
@@ -217,13 +222,14 @@ void registerWidgets() {
 ''';
 
   await file.writeAsString(updatedContent, flush: true);
-  print("✅ Selected widgets registered and updated in $_widgetRegistryFile.");
+  developer.log(
+      "✅ Selected widgets registered and updated in $_widgetRegistryFile.");
 }
 
 Future<void> _loadRegistry() async {
   final file = File(_widgetRegistryFile);
   if (!file.existsSync()) return;
-  print("📂 Loading registered widgets from $_widgetRegistryFile");
+  developer.log("📂 Loading registered widgets from $_widgetRegistryFile");
   Process.runSync("dart", ["run", _widgetRegistryFile]);
 }
 
@@ -237,5 +243,5 @@ Future<void> generatePreviews({required List<String> widgets}) async {
     final file = File("${previewDir.path}/$widget.txt");
     file.writeAsStringSync("Preview generated for: $widget");
   }
-  print("✅ Previews generated in widgy_previews/");
+  developer.log("✅ Previews generated in widgy_previews/");
 }
