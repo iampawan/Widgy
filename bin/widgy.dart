@@ -258,14 +258,14 @@ Future<List<int>> customMultiSelect({
   final headerLines = prompt.split('\n');
   const instructions =
       'Use ↑/↓ to move, space to toggle selection, and Enter to finish.\n'
-      '(Mouse scroll is not supported)';
+      'Press "q" or Ctrl+C to exit.';
   final headerContent = [...headerLines, instructions];
   final headerRowCount = headerContent.length;
 
   // Determine how many rows are available for displaying options.
   int availableRows = console.windowHeight - headerRowCount;
   if (availableRows < 1) availableRows = 1;
-  int windowOffset = 0; // The index of the first option in the visible region
+  int windowOffset = 0; // Index of the first option in the visible region
 
   // Draw the header (prompt and instructions) at the top.
   void drawHeader() {
@@ -280,6 +280,7 @@ Future<List<int>> customMultiSelect({
   void drawOptions() {
     int endIndex = windowOffset + availableRows;
     if (endIndex > options.length) endIndex = options.length;
+
     // Redraw the options region.
     for (int i = windowOffset; i < endIndex; i++) {
       final row = headerRowCount + (i - windowOffset);
@@ -295,13 +296,14 @@ Future<List<int>> customMultiSelect({
         console.setForegroundColor(ConsoleColor.black);
         console.setBackgroundColor(ConsoleColor.white);
       } else {
-        console.setForegroundColor(ConsoleColor.white);
-        console.setBackgroundColor(ConsoleColor.brightBlack);
+        console.setForegroundColor(ConsoleColor.green);
+        console.setBackgroundColor(ConsoleColor.black);
       }
       console.write(text);
       console.resetColorAttributes();
     }
-    // Clear any remaining lines if the visible region is not completely filled.
+
+    // Clear any remaining lines if the visible region isn't completely filled.
     for (int i = endIndex - windowOffset; i < availableRows; i++) {
       final row = headerRowCount + i;
       console.cursorPosition = Coordinate(row, 0);
@@ -318,20 +320,28 @@ Future<List<int>> customMultiSelect({
   while (true) {
     final key = console.readKey();
 
+    // Check for exit conditions: Ctrl+C or 'q' key.
+    if (key.controlChar == ControlCharacter.ctrlC ||
+        key.char.toLowerCase() == 'q') {
+      console.clearScreen();
+      console.resetColorAttributes();
+      print('Exiting...');
+      exit(0);
+    }
+
     if (key.controlChar == ControlCharacter.arrowUp) {
-      // Wrap-around if necessary.
       currentIndex = currentIndex - 1;
       if (currentIndex < 0) currentIndex = options.length - 1;
     } else if (key.controlChar == ControlCharacter.arrowDown) {
       currentIndex = (currentIndex + 1) % options.length;
     } else if (key.char == ' ') {
-      // Toggle selection for the current option.
+      // Toggle the selection for the current option.
       selected[currentIndex] = !selected[currentIndex];
     } else if (key.controlChar == ControlCharacter.enter) {
       break;
     }
 
-    // Adjust windowOffset so that currentIndex is always visible.
+    // Adjust the window so that currentIndex is always visible.
     if (currentIndex < windowOffset) {
       windowOffset = currentIndex;
     } else if (currentIndex >= windowOffset + availableRows) {
