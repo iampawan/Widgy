@@ -15,6 +15,7 @@ dependencies:
   path_provider: ^2.1.5
   args: ^2.6.0
   interact_pk: ^2.2.1
+  dart_console: ^4.1.1
 
 
 dev_dependencies:

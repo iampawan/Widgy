@@ -1,7 +1,7 @@
 import 'dart:io';
 
 import 'package:args/args.dart';
-import 'package:interact_pk/interact_pk.dart';
+import 'package:dart_console/dart_console.dart';
 import 'package:widgy/src/widget_metadata/widget_metadata_import.dart';
 
 const String _widgetRegistryFile = "lib/widgy_registry.dart";
@@ -107,43 +107,39 @@ Future<List<WidgetMetaDataBase>> discoverWidgets(
     return [];
   }
 
-  // Generate checkbox selection using interact package
-  List<String> widgetNames = discoveredWidgets.map((w) => w.name).toList();
+  // Assume we now have a list of widget names:
+  final widgetNames = discoveredWidgets.map((w) => w.name).toList();
+
+  // Add a "Select All" option at the top.
   widgetNames.insert(0, "[Select All]");
 
-  // Ensure `defaults` has the correct length
-  final defaultSelection = List.generate(widgetNames.length, (index) => false);
-
-  final selected = MultiSelect(
+  // Invoke the custom multi-select.
+  final selectedIndices = await customMultiSelect(
     prompt: "Select widgets to register:",
     options: widgetNames,
-    defaults: defaultSelection,
-  ).interact();
+  );
 
   List<WidgetMetaDataBase> selectedWidgets = [];
-
-  if (selected.isEmpty) {
-    stdout.writeln("⚠️ No widgets selected. Operation cancelled.");
-    return [];
-  }
-
-  if (selected.contains(0)) {
-    // Select All option
+  if (selectedIndices.contains(0)) {
+    // If "[Select All]" is selected, then select all discovered widgets.
     selectedWidgets = discoveredWidgets;
   } else {
-    selectedWidgets = selected.map((i) => discoveredWidgets[i - 1]).toList();
+    // Otherwise, subtract 1 from each index because of the inserted "[Select All]" option.
+    for (final index in selectedIndices) {
+      // Guard against any index issues.
+      if (index > 0 && index - 1 < discoveredWidgets.length) {
+        selectedWidgets.add(discoveredWidgets[index - 1]);
+      }
+    }
   }
 
-  stdout.writeln("\n📝 Summary of Widget Selection:");
+  // Print a summary.
+  console.resetColorAttributes();
+  print("\nSelected Widgets:");
   for (var widget in selectedWidgets) {
-    stdout.writeln("✔ Registered: ${widget.name}");
+    print("✔ ${widget.name}");
   }
-  _saveRegistry(selectedWidgets);
-  final skippedWidgets =
-      discoveredWidgets.where((w) => !selectedWidgets.contains(w)).toList();
-  for (var widget in skippedWidgets) {
-    stdout.writeln("❌ Skipped: ${widget.name}");
-  }
+  await _saveRegistry(selectedWidgets);
 
   return selectedWidgets;
 }
@@ -243,4 +239,111 @@ Future<void> generatePreviews({required List<String> widgets}) async {
     file.writeAsStringSync("Preview generated for: $widget");
   }
   stdout.writeln("✅ Previews generated in widgy_previews/");
+}
+
+final console = Console();
+
+/// Displays an interactive multi-select list with checkboxes in the terminal.
+/// [prompt] is displayed at the top, and [options] is the list of choices.
+/// Returns a list of indices corresponding to the selected options.
+Future<List<int>> customMultiSelect({
+  required String prompt,
+  required List<String> options,
+}) async {
+  // Track the selection state.
+  final selected = List<bool>.filled(options.length, false);
+  int currentIndex = 0;
+
+  // Prepare header content.
+  final headerLines = prompt.split('\n');
+  const instructions =
+      'Use ↑/↓ to move, space to toggle selection, and Enter to finish.\n'
+      '(Mouse scroll is not supported)';
+  final headerContent = [...headerLines, instructions];
+  final headerRowCount = headerContent.length;
+
+  // Determine how many rows are available for displaying options.
+  int availableRows = console.windowHeight - headerRowCount;
+  if (availableRows < 1) availableRows = 1;
+  int windowOffset = 0; // The index of the first option in the visible region
+
+  // Draw the header (prompt and instructions) at the top.
+  void drawHeader() {
+    for (int i = 0; i < headerRowCount; i++) {
+      console.cursorPosition = Coordinate(i, 0);
+      console.eraseLine();
+      console.write(headerContent[i]);
+    }
+  }
+
+  // Draw only the visible portion of the options.
+  void drawOptions() {
+    int endIndex = windowOffset + availableRows;
+    if (endIndex > options.length) endIndex = options.length;
+    // Redraw the options region.
+    for (int i = windowOffset; i < endIndex; i++) {
+      final row = headerRowCount + (i - windowOffset);
+      console.cursorPosition = Coordinate(row, 0);
+      console.eraseLine();
+
+      // Build the checkbox and option text.
+      final checkbox = selected[i] ? '[x] ' : '[ ] ';
+      final text = '$checkbox${options[i]}';
+
+      // Highlight the currently focused option.
+      if (i == currentIndex) {
+        console.setForegroundColor(ConsoleColor.black);
+        console.setBackgroundColor(ConsoleColor.white);
+      } else {
+        console.setForegroundColor(ConsoleColor.white);
+        console.setBackgroundColor(ConsoleColor.brightBlack);
+      }
+      console.write(text);
+      console.resetColorAttributes();
+    }
+    // Clear any remaining lines if the visible region is not completely filled.
+    for (int i = endIndex - windowOffset; i < availableRows; i++) {
+      final row = headerRowCount + i;
+      console.cursorPosition = Coordinate(row, 0);
+      console.eraseLine();
+    }
+  }
+
+  // Initial drawing.
+  console.clearScreen();
+  drawHeader();
+  drawOptions();
+
+  // Main input loop.
+  while (true) {
+    final key = console.readKey();
+
+    if (key.controlChar == ControlCharacter.arrowUp) {
+      // Wrap-around if necessary.
+      currentIndex = currentIndex - 1;
+      if (currentIndex < 0) currentIndex = options.length - 1;
+    } else if (key.controlChar == ControlCharacter.arrowDown) {
+      currentIndex = (currentIndex + 1) % options.length;
+    } else if (key.char == ' ') {
+      // Toggle selection for the current option.
+      selected[currentIndex] = !selected[currentIndex];
+    } else if (key.controlChar == ControlCharacter.enter) {
+      break;
+    }
+
+    // Adjust windowOffset so that currentIndex is always visible.
+    if (currentIndex < windowOffset) {
+      windowOffset = currentIndex;
+    } else if (currentIndex >= windowOffset + availableRows) {
+      windowOffset = currentIndex - availableRows + 1;
+    }
+    drawOptions();
+  }
+
+  // Build and return the list of selected indices.
+  final selectedIndices = <int>[];
+  for (int i = 0; i < selected.length; i++) {
+    if (selected[i]) selectedIndices.add(i);
+  }
+  return selectedIndices;
 }
