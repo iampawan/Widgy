@@ -18,7 +18,7 @@ import 'package:widgy/src/pages/widget_preview_page.dart' as _i2;
 /// [_i1.WidgetCatalogPage]
 class WidgetCatalogRoute extends _i3.PageRouteInfo<void> {
   const WidgetCatalogRoute({List<_i3.PageRouteInfo>? children})
-    : super(WidgetCatalogRoute.name, initialChildren: children);
+      : super(WidgetCatalogRoute.name, initialChildren: children);
 
   static const String name = 'WidgetCatalogRoute';
 
@@ -38,10 +38,10 @@ class WidgetPreviewRoute extends _i3.PageRouteInfo<WidgetPreviewRouteArgs> {
     required String name,
     List<_i3.PageRouteInfo>? children,
   }) : super(
-         WidgetPreviewRoute.name,
-         args: WidgetPreviewRouteArgs(key: key, name: name),
-         initialChildren: children,
-       );
+          WidgetPreviewRoute.name,
+          args: WidgetPreviewRouteArgs(key: key, name: name),
+          initialChildren: children,
+        );
 
   static const String name = 'WidgetPreviewRoute';
 
