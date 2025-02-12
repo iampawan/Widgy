@@ -49,7 +49,7 @@ void main(List<String> arguments) async {
 
   // Version command.
   if (argResults['version'] as bool) {
-    stdout.writeln('Widgy version 0.0.2');
+    stdout.writeln('Widgy version 0.1.0');
     exit(0);
   }
 
@@ -177,9 +177,9 @@ Future<List<WidgetMetaDataBase>> discoverWidgets(
 
   // Print a summary.
   console.resetColorAttributes();
-  print("\nSelected Widgets:");
+  stdout.writeln("\nSelected Widgets:");
   for (var widget in selectedWidgets) {
-    print("✔ ${widget.name}");
+    stdout.writeln("✔ ${widget.name}");
   }
   await _saveRegistry(selectedWidgets);
 
@@ -288,7 +288,7 @@ Future<void> generatePreviews({required List<String> widgets}) async {
 Future<void> generateDependencyGraph({bool includeFlutter = false}) async {
   final libDir = Directory('lib');
   if (!libDir.existsSync()) {
-    print('Error: lib directory not found.');
+    stdout.writeln('Error: lib directory not found.');
     return;
   }
 
@@ -368,9 +368,9 @@ Future<void> generateDependencyGraph({bool includeFlutter = false}) async {
           }
         }
       }
-    } catch (e, stackTrace) {
+    } catch (e) {
       // Log the error and skip this file.
-      print('Error processing file ${file.path}: $e');
+      stdout.writeln('Error processing file ${file.path}: $e');
       continue;
     }
   }
@@ -439,7 +439,7 @@ Future<void> generateDependencyGraph({bool includeFlutter = false}) async {
 
   final dotFile = File('widget_dependency_graph.dot');
   await dotFile.writeAsString(dotBuffer.toString());
-  print('DOT file generated: ${dotFile.path}');
+  stdout.writeln('DOT file generated: ${dotFile.path}');
 
   // Generate an HTML file using Viz.js for interactive visualization.
   final htmlContent = '''
@@ -459,7 +459,7 @@ Future<void> generateDependencyGraph({bool includeFlutter = false}) async {
     <h1>Widget Dependency Graph</h1>
     <div id="graph"></div>
     <script>
-      var dot = \`${dotBuffer.toString()}\`;
+      var dot = `${dotBuffer.toString()}`;
       var viz = new Viz();
       viz.renderSVGElement(dot)
          .then(function(element) {
@@ -475,7 +475,7 @@ Future<void> generateDependencyGraph({bool includeFlutter = false}) async {
 
   final htmlFile = File('widget_dependency_graph.html');
   await htmlFile.writeAsString(htmlContent);
-  print('HTML visualization generated: ${htmlFile.path}');
+  stdout.writeln('HTML visualization generated: ${htmlFile.path}');
 }
 
 /// A recursive AST visitor that collects the names of instantiated widgets.
@@ -576,7 +576,7 @@ Future<List<int>> customMultiSelect({
         key.char.toLowerCase() == 'q') {
       console.clearScreen();
       console.resetColorAttributes();
-      print('Exiting...');
+      stdout.writeln('Exiting...');
       exit(0);
     }
 

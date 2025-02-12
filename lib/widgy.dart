@@ -1,4 +1,4 @@
-library widgy;
+library;
 
 export 'src/actions.dart';
 export 'src/data_store.dart';

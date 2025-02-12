@@ -14,7 +14,8 @@ Widgy is a **powerful Flutter package** that allows developers to **build, test,
 ✅ **Non-intrusive Integration** – Works with or without `dataflow` dependency in your app.  
 ✅ **Automatic `widgy_registry.dart` Management** – Keeps track of registered widgets efficiently.  
 ✅ **Selective Widget Registration** – Allows you to manually choose which widgets to register.  
-✅ **No Flutter SDK Scanning Issues** – Avoids scanning Flutter SDK and external packages.
+✅ **No Flutter SDK Scanning Issues** – Avoids scanning Flutter SDK and external packages.  
+✅ **Widget Dependency Graph** – Generate an interactive dependency graph of widgets.  
 
 ---
 
@@ -95,7 +96,31 @@ Select widgets to register:
 
 ---
 
-### **5️⃣ Running the Widget Isolator**
+### **5️⃣ Generate Widget Dependency Graph**
+
+Widgy allows you to generate an **interactive dependency graph** of your widgets, showing how they relate to each other.
+
+Run:
+
+```sh
+dart run widgy --graph
+```
+
+This will:
+- Analyze the **build methods** of all widgets in `lib/`
+- Generate a **DOT file (`widget_dependency_graph.dot`)** that can be visualized using Graphviz
+- Create an **interactive HTML file (`widget_dependency_graph.html`)** for easy visualization
+
+📌 **You can optionally include Flutter widgets in the graph with:**
+
+```sh
+dart run widgy --graph --include-flutter
+```
+
+---
+
+
+### 6️⃣ Running the Widget Isolator**
 
 To start the **Widgy UI Catalog**, run:
 
@@ -131,11 +156,12 @@ void registerWidgets() {
 
 ## 🛠 CLI Commands
 
-| Command | Description                                  |
-|---------|----------------------------------------------|
-| `dart run widgy --discover` | Auto-detect widgets and register them        |
-| `dart run widgy --ui` | Start the widget preview UI (Under Dev)      |
-| `dart run widgy --log=logfile.txt` | Log discovered widgets to a file (Under Dev) |
+| Command                             | Description                                  |
+|-------------------------------------|----------------------------------------------|
+| `dart run widgy --discover`         | Auto-detect widgets and register them        |
+| `dart run widgy --graph`            | Generates a widget dependency graph          |
+| `dart run widgy --ui`               | Start the widget preview UI (Under Dev)      |
+| `dart run widgy --log=logfile.txt`  | Log discovered widgets to a file (Under Dev) |
 | `dart run widgy --generate-preview` | Generate widget previews (Under Dev)         |
 
 ---

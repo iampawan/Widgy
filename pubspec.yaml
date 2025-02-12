@@ -1,6 +1,6 @@
 name: widgy
 description: "Widgy is a powerful package that allows developers to build, test, and preview widgets in isolation."
-version: 0.0.2
+version: 0.1.0
 homepage: "https://github.com/iampawan/Widgy"
 
 environment:
