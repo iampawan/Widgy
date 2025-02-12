@@ -49,7 +49,7 @@ void main(List<String> arguments) async {
 
   // Version command.
   if (argResults['version'] as bool) {
-    stdout.writeln('Widgy version 0.1.0');
+    stdout.writeln('Widgy version 0.1.1');
     exit(0);
   }
 
