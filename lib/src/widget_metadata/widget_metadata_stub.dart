@@ -32,7 +32,11 @@ class WidgetMetaData extends WidgetMetaDataBase {
   }
 
   @override
-  T get<T>(String propertyName, {required T defaultValue}) {
-    return defaultValue;
+  T get<T>(String propertyName) {
+    return properties
+        .firstWhere(
+          (prop) => prop.name == propertyName,
+        )
+        .value as T;
   }
 }

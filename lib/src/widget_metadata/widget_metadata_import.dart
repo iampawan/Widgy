@@ -10,5 +10,5 @@ abstract class WidgetMetaDataBase {
   String toDartCode();
 
   // Add a generic get<T> method to retrieve properties safely
-  T get<T>(String propertyName, {required T defaultValue});
+  T get<T>(String propertyName);
 }

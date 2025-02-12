@@ -40,29 +40,28 @@ class WidgetMetaData implements WidgetMetaDataBase {
 
   // Helper method to get a property value safely with an optional default fallback
   @override
-  T get<T>(String propertyName, {required T defaultValue}) {
-    final property = properties.firstWhere(
-      (prop) => prop.name == propertyName,
-      orElse: () => WidgetProperty(
-        name: propertyName,
-        type: _inferPropertyType(defaultValue),
-        value: defaultValue,
-      ),
-    );
-    if (property.value is T) {
-      return property.value as T;
-    } else {
-      throw ArgumentError("Incorrect type for property '$propertyName'");
+  T get<T>(String propertyName) {
+    try {
+      final property = properties.firstWhere(
+        (prop) => prop.name == propertyName,
+      );
+      if (property.value is T) {
+        return property.value as T;
+      } else {
+        throw ArgumentError("Incorrect type for property '$propertyName'");
+      }
+    } catch (e) {
+      throw ArgumentError("Property '$propertyName' not found");
     }
   }
 
-  // Infers the WidgetPropertyType based on the default value type
-  static WidgetPropertyType _inferPropertyType(dynamic value) {
-    if (value is String) return WidgetPropertyType.string;
-    if (value is int) return WidgetPropertyType.int;
-    if (value is double) return WidgetPropertyType.double;
-    if (value is bool) return WidgetPropertyType.bool;
-    if (value is Color) return WidgetPropertyType.color;
-    return WidgetPropertyType.string;
-  }
+  // // Infers the WidgetPropertyType based on the default value type
+  // static WidgetPropertyType _inferPropertyType(dynamic value) {
+  //   if (value is String) return WidgetPropertyType.string;
+  //   if (value is int) return WidgetPropertyType.int;
+  //   if (value is double) return WidgetPropertyType.double;
+  //   if (value is bool) return WidgetPropertyType.bool;
+  //   if (value is Color) return WidgetPropertyType.color;
+  //   return WidgetPropertyType.string;
+  // }
 }
