@@ -10,7 +10,7 @@ import 'package:widgy/src/widget_metadata/widget_metadata_import.dart';
 
 const String _widgetRegistryFile = "lib/widgy_registry.dart";
 void main(List<String> arguments) async {
-  stdout.write("🚀 Welcome to Widgy CLI Tool\n");
+  stdout.writeln("🚀 Welcome to Widgy CLI Tool\n");
   final parser = ArgParser()
     ..addFlag('discover',
         abbr: 'd',
@@ -297,6 +297,9 @@ Future<void> generateDependencyGraph({bool includeFlutter = false}) async {
   // Map of widget class name -> set of widget names instantiated in its build method.
   final Map<String, Set<String>> dependencyGraph = {};
 
+  // Map of widget class name -> usage count.
+  final Map<String, int> usageCounts = {};
+
   // List all Dart files under lib/
   final dartFiles = libDir
       .listSync(recursive: true)
@@ -357,6 +360,9 @@ Future<void> generateDependencyGraph({bool includeFlutter = false}) async {
                 // Avoid self-references.
                 if (instantiatedWidget == className) continue;
                 dependencyGraph[className]!.add(instantiatedWidget);
+                // Increment usage count for this widget.
+                usageCounts[instantiatedWidget] =
+                    (usageCounts[instantiatedWidget] ?? 0) + 1;
               }
             }
           }
@@ -385,6 +391,12 @@ Future<void> generateDependencyGraph({bool includeFlutter = false}) async {
     // 'Key'
   };
 
+  // Print usage stats.
+  stdout.writeln('Widget Usage Counts:');
+  usageCounts.forEach((widget, count) {
+    stdout.writeln('  $widget: $count');
+  });
+
   final dotBuffer = StringBuffer();
 
 // Add some graph attributes for a cleaner look.
@@ -396,6 +408,20 @@ Future<void> generateDependencyGraph({bool includeFlutter = false}) async {
       '  node [shape=box, style=filled, color="#CCCCFF", fontname="Helvetica"];');
 // Style edges with a dark gray color.
   dotBuffer.writeln('  edge [color="#333333", arrowhead=normal];');
+
+  // Create nodes with usage count labels.
+  // We’ll include nodes that are either parents or children.
+  final allNodes = <String>{};
+  dependencyGraph.forEach((widget, children) {
+    allNodes.add(widget);
+    allNodes.addAll(children);
+  });
+  for (final node in allNodes) {
+    // Get usage count if available.
+    final count = usageCounts[node] ?? 0;
+    // Set label to include usage count.
+    dotBuffer.writeln('  "$node" [label="$node\\n(count: $count)"];');
+  }
 
 // Build the graph edges, filtering out nodes that are in the ignore list.
   dependencyGraph.forEach((widget, children) {
