@@ -15,7 +15,26 @@ Widgy is a **powerful Flutter package** that allows developers to **build, test,
 ✅ **Automatic `widgy_registry.dart` Management** – Keeps track of registered widgets efficiently.  
 ✅ **Selective Widget Registration** – Allows you to manually choose which widgets to register.  
 ✅ **No Flutter SDK Scanning Issues** – Avoids scanning Flutter SDK and external packages.  
-✅ **Widget Dependency Graph** – Generate an interactive dependency graph of widgets.  
+✅ **Widget Dependency Graph** – Generate an interactive dependency graph of widgets.
+
+---
+
+## 📂 Open in IDX
+
+<a href="https://idx.google.com/import?url=https%3A%2F%2Fgithub.com%2Fiampawan%2FWidgy">
+  <picture>
+    <source
+      media="(prefers-color-scheme: dark)"
+      srcset="https://cdn.idx.dev/btn/open_dark_32.svg">
+    <source
+      media="(prefers-color-scheme: light)"
+      srcset="https://cdn.idx.dev/btn/open_light_32.svg">
+    <img
+      height="32"
+      alt="Open in IDX"
+      src="https://cdn.idx.dev/btn/open_purple_32.svg">
+  </picture>
+</a>
 
 ---
 
@@ -107,6 +126,7 @@ dart run widgy --graph
 ```
 
 This will:
+
 - Analyze the **build methods** of all widgets in `lib/`
 - Generate a **DOT file (`widget_dependency_graph.dot`)** that can be visualized using Graphviz
 - Create an **interactive HTML file (`widget_dependency_graph.html`)** for easy visualization
@@ -119,8 +139,7 @@ dart run widgy --graph --include-flutter
 
 ---
 
-
-### 6️⃣ Running the Widget Isolator**
+### 6️⃣ Running the Widget Isolator\*\*
 
 To start the **Widgy UI Catalog**, run:
 
@@ -157,7 +176,7 @@ void registerWidgets() {
 ## 🛠 CLI Commands
 
 | Command                             | Description                                  |
-|-------------------------------------|----------------------------------------------|
+| ----------------------------------- | -------------------------------------------- |
 | `dart run widgy --discover`         | Auto-detect widgets and register them        |
 | `dart run widgy --graph`            | Generates a widget dependency graph          |
 | `dart run widgy --ui`               | Start the widget preview UI (Under Dev)      |
@@ -196,4 +215,3 @@ We welcome contributions! If you have ideas or improvements, feel free to **open
 ## 📄 License
 
 Widgy is licensed under the **MIT License**.
-
